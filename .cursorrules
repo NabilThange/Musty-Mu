@@ -1,0 +1,432 @@
+# MUSTY BAUHAUS BRUTALISM UI RULESET
+
+## DESIGN STYLE — CORE
+
+SET design_theme TO "Bauhaus Brutalism"
+
+APPLY:
+- PRIORITIZE function over form
+- ENFORCE high-contrast, raw visual hierarchy
+- USE bold geometric elements ONLY
+- DISALLOW soft edges, gradients, or skeuomorphic styling
+
+---
+
+## STRUCTURE — SYSTEM PRINCIPLES
+
+SET layout_grid TO 12-column
+SET content_max_width TO 1200px
+SET base_spacing_unit TO 4px
+
+DEFINE spacing_scale:
+  xs: 4px
+  sm: 8px
+  md: 16px
+  lg: 24px
+  xl: 32px
+  2xl: 48px
+
+DEFINE breakpoints:
+  mobile: 0–767px
+  tablet: 768–1023px
+  desktop: 1024px+
+
+ENFORCE responsive-first styling
+
+---
+
+## COLORS — PALETTE
+
+SET primary_red TO #dc2626
+SET primary_blue TO #2563eb
+SET accent_yellow TO #eab308
+SET black TO #000000
+SET white TO #ffffff
+
+USE:
+- Red: HEADINGS, CRITICAL ACTIONS
+- Blue: INTERACTIVES, BUTTONS
+- Yellow: HIGHLIGHT, CTA
+- Black: BORDERS, TEXT
+- White: BACKGROUND
+
+MAINTAIN minimum contrast ratio: WCAG AA+
+
+---
+
+## TYPOGRAPHY
+
+USE:
+- PRIMARY_FONT: Inter, sans-serif
+- DISPLAY_FONT: System Mono
+
+STYLE:
+- HEADINGS: uppercase, font-black (900), tight letter-spacing (-0.025em)
+- BODY: font-bold (700) or font-normal (400)
+- LINE_HEIGHT: 1.5–1.6
+
+MAKE all interactive text bold
+ADD scale-105 on hover for clickable text
+
+SCALE type across breakpoints:
+- Mobile: base scale
+- Tablet: scale 1.25×
+- Desktop: scale 1.5× headers
+
+---
+
+## COMPONENTS — CARDS
+
+BASE_CARD:
+- bg-white
+- border: 8px solid black
+- box-shadow: 8px offset (shadow-brutal)
+- text-align: left
+
+ON hover:
+- translateY(-4px)
+- REMOVE shadow
+
+VARIANTS:
+- PRIMARY: bg-blue, text-white
+- SECONDARY: bg-yellow, text-black
+- DANGER: bg-red, text-white
+- SUCCESS: bg-green, text-white
+- DARK: bg-black, text-white, white-shadow
+
+APPLY uniform border-radius: none
+
+---
+
+## COMPONENTS — BUTTONS
+
+BASE_BUTTON:
+- text-uppercase
+- border: 4px solid black
+- font-weight: black (900)
+- shadow-brutal
+- size: h-12 (default)
+
+VARIANTS:
+- Default: bg-white text-black
+- Primary: bg-blue text-white
+- Secondary: bg-yellow text-black
+- Destructive: bg-red text-white
+- Success: bg-green text-white
+
+ON hover:
+- translateY(4px)
+- REMOVE shadow
+- APPLY color-shift (duration: 150ms)
+
+---
+
+## COMPONENTS — FORMS
+
+INPUTS:
+- border: 4px solid black
+- no border-radius
+- font-bold labels
+- large padding
+- contrast-focused outline on focus
+
+USE grid for forms. 1fr columns on mobile, 2–3fr on tablet+.
+
+---
+
+## INTERACTIONS
+
+ON hover:
+- cards: lift + shadow disappear
+- buttons: press down + shadow disappear
+- icon-button: scale-110 or translateX(8px)
+
+RESPECT prefers-reduced-motion
+
+LIMIT all animations to 300ms max
+AVOID autoplay or looped motion
+
+---
+
+## PAGE RESPONSIVENESS
+
+CARDS:
+- stack vertically on mobile
+- use `grid-cols-1 sm:grid-cols-2 md:grid-cols-3` layout
+
+NAVIGATION:
+- horizontal on desktop
+- collapsible menu on mobile
+- highlight active items with `border-l-4`
+
+---
+
+## LAYERING — VISUAL DEPTH
+
+z-index hierarchy:
+1. Backgrounds (z-0)
+2. Content Cards (z-10)
+3. Navbars (z-20)
+4. Modals/Alerts (z-50)
+
+---
+
+## ACCESSIBILITY RULES
+
+ENSURE:
+- All text contrast ≥ 7:1
+- Focus outlines visible and bold
+- Tab order logical
+- Add skip links
+- Screen-reader roles defined
+
+---
+
+## BRAND SYSTEM — MASCOT
+
+USE mascot as:
+- Positioned CTA guide
+- Geometric bounce: `animate-bounce-gentle`
+- Brutalist speech bubble
+- Never use soft gradients or curves
+
+---
+
+## CONSISTENCY ENFORCEMENT
+
+MANDATE:
+- Uniform shadow system
+- Grid-aligned layout
+- No rounded borders
+- Consistent use of font weights
+- Color usage per design tokens only
+
+---
+
+APPLY these rules globally across all views and modules within MUSTY.
+FAILURE TO COMPLY triggers layout audit or rejection.
+
+# MUSTY – Page-Level MVP & PRD (Updated)
+
+---
+
+## 📦 Updated Planning & Workflow Process
+
+1. **Define Scope per Page**: Dashboard, Syllabus, Schedule, Resources, StudGem AI, Analytics, Flashcards, Mindmap, Peer Notes
+2. **Identify User Goals for Each Page**: What students need to learn, revise, access, or use AI for.
+3. **List MVP Components**: For each page, specify UI elements and logic that meet basic user needs.
+4. **Draft PRD Components**: Functional and non-functional specs per page.
+5. **Gamification, Reviews, and Open Access**: NO login required. Users can access everything. Progress stored locally.
+6. **Review and Iterate**: Keep adding more student-facing features without overloading them.
+
+---
+
+## 1. Dashboard Page
+
+**User Goals:** See progress, upcoming exams, access quick links to features.
+
+### MVP Components
+
+* Gamified Cards: Syllabus, Schedule, Resources, StudGem AI, Flashcards, Mindmap, Quiz, Peer Notes
+* XP/progress rings (stored locally)
+* Notification area (general MU alerts)
+* Year, Semester, Branch, Electives selector (sticky or top-bar)
+* Selections are globally saved and applied to all modules
+
+### PRD
+
+* No login needed
+* Clicking a card → go to corresponding module using already selected academic context
+* All progress saved to `localStorage`
+* Cards use Bauhaus brutalist style: thick outlines, bold colors, grid layout
+* Each card (like Flashcards, Mindmap, Quiz) opens StudGem AI page with the correct mode pre-selected and context pre-filled
+
+---
+
+## 2. Syllabus Page
+
+**User Goals:** View and download official MU syllabus PDFs based on dashboard selection
+
+### MVP Components
+
+* Subject cards auto-filtered using dashboard context (Year, Semester)
+* Each subject card: Subject name, Course Code, Download Syllabus button
+
+### PRD
+
+* No selection inputs on this page (uses existing dashboard state)
+* Only official PDF downloads shown — no breakdown of modules/topics
+* Backend still uses subject context for AI if needed (e.g., in StudGem AI)
+* Fast and minimal: 1-click access to syllabus
+* Used by backend to feed StudGem AI when "syllabus" mode is selected
+
+---
+
+## 3. Schedule Page
+
+**User Goals:** See MU exam dates + create custom study sessions
+
+### MVP Components
+
+* MU Timetable (auto updated)
+* User-defined events (stored locally)
+* Calendar view + countdowns
+
+### PRD
+
+* MU dates auto-fetched or uploaded manually
+* "Add event" feature to plan personal deadlines
+* Sync to Google Calendar (optional)
+
+---
+
+## 4. Resources Page
+
+**User Goals:** Browse previous year papers, question banks, answers, and shared notes
+
+### MVP Components
+
+* Tabs: PYQs / PYQ Answers / Question Banks / Timetable / Peer Notes
+* Filter auto-applies based on selected year/semester from dashboard
+* Cards with download/view buttons
+* Bookmark option
+
+### PRD
+
+* No login needed
+* Peer Notes: upload form with tagging (year, sem, subject, type)
+* Cards can be rated with 👍 or ⭐⭐⭐⭐
+
+---
+
+## 5. StudGem AI Page
+
+**User Goals:** Ask AI for help using syllabus context or uploaded notes, generate flashcards, mindmaps, quizzes from same base
+
+### MVP Components
+
+* On first use: Ask user if they want to continue with existing dashboard selections or switch context
+* If "Generate from Syllabus" → system auto-loads syllabus file using dashboard's year, semester, subject (if selected)
+* If "Upload Notes" → user adds PDFs/typed content
+* AI Chat interface
+* Flashcards Mode
+* Mindmap Mode
+* Quiz Mode
+* Tab/card-style UI to switch between modes
+
+### PRD
+
+* Global context passed from dashboard unless overridden
+* All AI actions (chat/quiz/mindmap/flashcard) reuse the same selected source: syllabus or notes
+* Context switcher allows user to reselect anytime
+* No login; session stored in browser
+
+---
+
+## 6. Flashcards Mode (inside StudGem AI)
+
+**User Goals:** Learn using generated flashcards (from notes, syllabus, AI answers)
+
+### MVP Components
+
+* Flashcard viewer: front/back
+* Shuffle, Flip, Next, Previous buttons
+* Mark as "known" or "review again"
+
+### PRD
+
+* Uses dashboard context + AI source type
+* Session local only
+* Share/export option optional
+
+---
+
+## 7. Mindmap Mode (inside StudGem AI)
+
+**User Goals:** Visualize a topic using an AI-generated mindmap
+
+### MVP Components
+
+* Bubble/tree layout of subject → module → topic
+* Clickable bubbles to explore
+* Export or print option
+
+### PRD
+
+* Follows same data flow as other StudGem AI modes
+* Swappable to flashcard/quiz/chat modes
+
+---
+
+## 8. Quiz Mode (inside StudGem AI)
+
+**User Goals:** Practice and test understanding of syllabus or uploaded content
+
+### MVP Components
+
+* Multiple choice or short-answer quiz
+* Instant feedback with explanation
+* Quiz generator: choose chapter or full subject
+
+### PRD
+
+* Inherits source context (syllabus or uploaded)
+* Locally stored scores
+* Retry button
+
+---
+
+## 9. Analytics Page
+
+**User Goals:** See what’s done, what’s pending, what’s likely to appear in exams
+
+### MVP Components
+
+* Progress bars per subject
+* Heatmap calendar for sessions
+* Prediction cards (e.g., “High chance topics based on PYQs”)
+
+### PRD
+
+* Context-dependent analytics (based on selected year/sem/subject)
+* No login required
+* All data stored in localStorage
+
+---
+
+## 10. Peer Notes Page
+
+**User Goals:** Explore and upload student-created notes by tag
+
+### MVP Components
+
+* Upload form with metadata
+* Filterable gallery
+* Rating/Report buttons
+
+### PRD
+
+* Context-based filtering from dashboard
+* Public and moderated
+* Optional tagging for AI use
+* Rate with "👍", "⭐" or "Was this helpful?"
+
+---
+
+## 11. Reviews/Rating System (Global)
+
+**User Goals:** Trust shared notes, improve AI
+
+### MVP Components
+
+* Rate: 👍 / 👎 or ⭐ 1–5 on any resource/AI reply
+* Track upvotes/downvotes
+
+### PRD
+
+* Store count + highlight popular notes
+* Use feedback to improve AI logic (optional)
+
+---
+
+*Next Steps: Implement global academic context from dashboard, auto-load syllabus behind the scenes, and pass shared state across all modules.*
