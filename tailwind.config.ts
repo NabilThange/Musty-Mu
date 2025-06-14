@@ -1,6 +1,5 @@
 import type { Config } from "tailwindcss"
 import { fontFamily } from "tailwindcss/defaultTheme"
-import { COLORS, SPACING, BORDER, SHADOW, TYPOGRAPHY, BREAKPOINTS } from './styles/design-tokens'
 
 const config: Config = {
   darkMode: ["class"],
@@ -21,8 +20,6 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-sans)", ...fontFamily.sans],
-        primary: [TYPOGRAPHY.FONT_FAMILY.PRIMARY],
-        display: [TYPOGRAPHY.FONT_FAMILY.DISPLAY],
       },
       colors: {
         background: "hsl(var(--background))",
@@ -96,48 +93,24 @@ const config: Config = {
           "rust-whisper": "rgba(180, 100, 70, 0.11)",
           "cool-slate": "rgba(100, 110, 120, 0.16)",
         },
-        brutalist: {
-          ...Object.fromEntries(
-            Object.entries(COLORS).map(([key, value]) => [key.toLowerCase(), value])
-          )
-        },
       },
-      fontSize: {
-        ...Object.fromEntries(
-          Object.entries(TYPOGRAPHY.SIZES).map(([key, value]) => [key.toLowerCase(), value])
-        ),
+      // Add custom shadows for brutalist design
+      boxShadow: {
+        brutal: "8px 8px 0px 0px #000000",
+        "brutal-white": "8px 8px 0px 0px #ffffff",
+        "brutal-sm": "4px 4px 0px 0px #000000",
+        "brutal-lg": "12px 12px 0px 0px #000000",
       },
-      fontWeight: {
-        ...Object.fromEntries(
-          Object.entries(TYPOGRAPHY.WEIGHTS).map(([key, value]) => [key.toLowerCase(), value])
-        ),
-      },
-      spacing: {
-        ...Object.fromEntries(
-          Object.entries(SPACING).map(([key, value]) => [key.toLowerCase(), value])
-        ),
-      },
+      // Add custom border widths
       borderWidth: {
         "6": "6px",
         "8": "8px",
         "12": "12px",
-        ...Object.fromEntries(
-          Object.entries(BORDER.WIDTH).map(([key, value]) => [key.toLowerCase(), value])
-        ),
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        ...Object.fromEntries(
-          Object.entries(BORDER.RADIUS).map(([key, value]) => [key.toLowerCase(), value])
-        ),
-      },
-      keyframes: {
-        "accordion-down": {
-          from: {
-            height: "0",
-          },
           to: {
             height: "var(--radix-accordion-content-height)",
           },
@@ -185,21 +158,6 @@ const config: Config = {
       dropShadow: {
         brutal: "4px 4px 0px rgba(0, 0, 0, 1)",
         "brutal-lg": "8px 8px 0px rgba(0, 0, 0, 1)",
-      },
-      boxShadow: {
-        ...Object.fromEntries(
-          Object.entries(SHADOW).map(([key, value]) => [key.toLowerCase(), value])
-        ),
-      },
-      screens: {
-        ...Object.fromEntries(
-          Object.entries(BREAKPOINTS).map(([key, value]) => [key.toLowerCase(), value])
-        ),
-      },
-      transitionDuration: {
-        '150': '150ms',
-        '300': '300ms',
-        '500': '500ms',
       },
     },
   },
