@@ -6,11 +6,14 @@ import Navbar from '@/components/navbar'
 import { useAcademicContext } from '@/contexts/academic-context'
 import { AcademicSelector, AcademicSelectorModal } from '@/components/academic-selector'
 import CourseCard from '@/components/course-card'
-
+import CourseEditModal from '@/components/course-edit-modal'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import timeGridPlugin from '@fullcalendar/timegrid' // Import for week/day views
+import { useCoursesLocalStorage } from '@/hooks/useCoursesLocalStorage'
+import { Course } from '@/types/Course'
+import { useRouter } from 'next/navigation'
 
 const motivationalQuotes = [
     "I refuse to let my comfort zone become my prison of mediocrity.",
@@ -47,14 +50,6 @@ const cardBackgrounds = [
   "bg-subtle-rust-whisper",
   "bg-subtle-cool-slate",
 ];
-
-interface Course {
-  id: string;
-  name: string;
-  subtext: string;
-  thumbnailText?: string;
-  cardBgColor: string;
-}
 
 interface CalendarEvent {
   id?: string;
@@ -176,21 +171,22 @@ export default function StudyPage() {
   const [pageTitle, setPageTitle] = useState<string>('Study Schedule')
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false)
   const [currentQuote, setCurrentQuote] = useState<string>('')
-  const [courses, setCourses] = useState<Course[]>([])
+  const { courses, addCourse, getCourseById } = useCoursesLocalStorage();
   const [calendarEvents, setCalendarEvents] = useState<any[]>([])
   const [activeCalendarTab, setActiveCalendarTab] = useState<string>('Week')
   const [showEventModal, setShowEventModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState('')
   const calendarRef = useRef<FullCalendar>(null);
   const [showChangeCoverButton, setShowChangeCoverButton] = useState(false);
+  const [selectedCourseForEdit, setSelectedCourseForEdit] = useState<Course | null>(null);
+  const [courseViewMode, setCourseViewMode] = useState<'active' | 'archived'>('active');
+  const router = useRouter();
 
   useEffect(() => {
     if (!isContextSet) {
       setShowSelector(true)
     }
-  }, [isContextSet])
 
-  useEffect(() => {
     const savedTitle = localStorage.getItem('studyPageTitle')
     if (savedTitle) {
       setPageTitle(savedTitle)
@@ -199,18 +195,11 @@ export default function StudyPage() {
     const randomIndex = Math.floor(Math.random() * motivationalQuotes.length);
     setCurrentQuote(motivationalQuotes[randomIndex]);
 
-    const initialCourses: Course[] = [
-      { id: '1', name: 'YOUR COURSE', subtext: 'www.yourcourse', thumbnailText: 'Thumbnail Placeholder', cardBgColor: '' },
-      { id: '2', name: 'writing', subtext: 'something about this course', thumbnailText: 'Thumbnail Placeholder', cardBgColor: '' },
-    ];
-
-    const coursesWithRandomColors = initialCourses.map(course => ({
-      ...course,
-      cardBgColor: cardBackgrounds[Math.floor(Math.random() * cardBackgrounds.length)],
-    }));
-    setCourses(coursesWithRandomColors);
-
-    // Initialize calendar events
+    // Initial courses are now managed by useCoursesLocalStorage, but we can add defaults if needed
+    // The useCoursesLocalStorage hook handles loading from localStorage, so no need for specific initial courses here unless we want hardcoded defaults for new users.
+    // If you want initial courses for a fresh start, you can modify useCoursesLocalStorage to check for existence and populate.
+    
+    // Initialize calendar events (still local to this component as per current scope)
     const initialEvents: any[] = [
       { 
         id: '1',
@@ -233,7 +222,7 @@ export default function StudyPage() {
     ];
     setCalendarEvents(initialEvents);
 
-  }, [])
+  }, [isContextSet])
 
   useEffect(() => {
     localStorage.setItem('studyPageTitle', pageTitle)
@@ -254,14 +243,34 @@ export default function StudyPage() {
   }
 
   const handleNewCourse = () => {
+    const timestamp = typeof window !== 'undefined' ? Date.now() : 0;
+    const randomSuffix = typeof window !== 'undefined' 
+      ? Math.random().toString(36).substr(2, 9) 
+      : 'default';
+    const newCourseId = `course_${timestamp}_${randomSuffix}`;
+    
     const newCourse: Course = {
-      id: Date.now().toString(),
+      id: newCourseId,
       name: 'NEW COURSE',
-      subtext: 'Placeholder for new course details',
-      thumbnailText: 'New Course Thumbnail',
+      subtext: 'Click to edit course details',
+      courseCode: 'COURSE-XXX',
+      thumbnailText: 'New Course',
       cardBgColor: cardBackgrounds[Math.floor(Math.random() * cardBackgrounds.length)],
+      professor: '',
+      status: 'Not started',
+      topics: [],
+      assignments: [],
+      exams: [],
+      createdAt: timestamp,
+      lastUpdated: timestamp,
+      archived: false
     };
-    setCourses(prevCourses => [...prevCourses, newCourse]);
+    
+    // Add the new course
+    addCourse(newCourse);
+    
+    // Redirect to the new course page
+    router.push(`/study/${newCourseId}`);
   };
 
   const handleDateClick = (info: any) => {
@@ -301,6 +310,14 @@ export default function StudyPage() {
     // In a real application, this would open a file picker or a modal
   };
 
+  const handleEditCourse = (course: Course) => {
+    setSelectedCourseForEdit(course);
+  };
+
+  const handleCloseEditModal = () => {
+    setSelectedCourseForEdit(null);
+  };
+
   const renderTitle = () => {
     const parts = pageTitle.split(' ')
     const studyIndex = parts.indexOf('Study')
@@ -334,6 +351,55 @@ export default function StudyPage() {
       )
     }
   }
+
+  const renderCourses = () => {
+    const { getActiveCourses, getArchivedCourses } = useCoursesLocalStorage();
+    const coursesToDisplay = courseViewMode === 'active' 
+      ? getActiveCourses() 
+      : getArchivedCourses();
+
+    return (
+      <div className="mb-12">
+        <div className="flex items-center gap-4 mb-6">
+          <h2 className="text-3xl font-black uppercase tracking-tighter text-black">
+            {courseViewMode === 'active' ? 'Active Courses' : 'Archived Courses'}
+          </h2>
+          <div className="flex gap-2">
+            <Button 
+              variant={courseViewMode === 'active' ? 'default' : 'outline'}
+              onClick={() => setCourseViewMode('active')}
+            >
+              Active
+            </Button>
+            <Button 
+              variant={courseViewMode === 'archived' ? 'default' : 'outline'}
+              onClick={() => setCourseViewMode('archived')}
+            >
+              Archived
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {coursesToDisplay.map(course => (
+            <CourseCard
+              key={course.id}
+              course={course}
+              onEdit={handleEditCourse}
+            />
+          ))}
+          {courseViewMode === 'active' && (
+            <div 
+              className="bg-white border-8 border-black p-8 shadow-brutal hover:-translate-y-4 hover:shadow-none transition-all text-left flex flex-col items-center justify-center cursor-pointer" 
+              onClick={handleNewCourse}
+            >
+              <span className="text-6xl mb-4 text-black">+</span>
+              <h3 className="font-black text-xl uppercase text-black">New Page</h3>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   if (!isContextSet) {
     return (
@@ -384,31 +450,7 @@ export default function StudyPage() {
         </div>
 
         {/* Courses Section */}
-        <div className="mb-12">
-          <div className="flex items-center gap-4 mb-6">
-            <h2 className="text-3xl font-black uppercase tracking-tighter text-black">Courses</h2>
-            <div className="flex gap-2">
-              <Button variant="default" size="default">Active</Button>
-              <Button variant="default" size="default">Past</Button>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {courses.map(course => (
-              <CourseCard
-                key={course.id}
-                id={course.id}
-                name={course.name}
-                subtext={course.subtext}
-                thumbnailText={course.thumbnailText}
-                cardBgColor={course.cardBgColor}
-              />
-            ))}
-            <div className="bg-white border-8 border-black p-8 shadow-brutal hover:-translate-y-4 hover:shadow-none transition-all text-left flex flex-col items-center justify-center cursor-pointer" onClick={handleNewCourse}>
-              <span className="text-6xl mb-4 text-black">+</span>
-              <h3 className="font-black text-xl uppercase text-black">New Page</h3>
-            </div>
-          </div>
-        </div>
+        {renderCourses()}
 
         {/* Enhanced Brutalist Calendar Section */}
         <div className="mb-12">
@@ -558,6 +600,15 @@ export default function StudyPage() {
         onAdd={handleAddEvent}
         selectedDate={selectedDate}
       />
+
+      {/* Course Edit Modal */}
+      {selectedCourseForEdit && (
+        <CourseEditModal
+          isOpen={!!selectedCourseForEdit}
+          course={selectedCourseForEdit}
+          onClose={handleCloseEditModal}
+        />
+      )}
 
       <AcademicSelectorModal isOpen={showSelector} onClose={() => setShowSelector(false)} />
     </div>
