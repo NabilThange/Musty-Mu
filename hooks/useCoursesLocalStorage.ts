@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { v4 as uuidv4 } from 'uuid'; // Import uuid
 import { 
   CourseMetadata, 
   Topic, 
@@ -8,6 +9,7 @@ import {
   Analytics, 
   CourseEvent 
 } from '@/types/Course';
+import { supabase } from '@/lib/supabase'; // Import supabase client
 
 interface CourseStorageSchema {
   version: string;
@@ -72,10 +74,10 @@ export function useCoursesLocalStorage() {
   }, [storage]);
 
   // Course Management
-  const addCourse = useCallback((course: Omit<CourseMetadata, 'id'>) => {
+  const addCourse = useCallback(async (course: Omit<CourseMetadata, 'id'>) => {
     const newCourse: CourseMetadata = {
       ...course,
-      id: `course_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: uuidv4(), // Generate a UUID for the new course ID
     };
     
     setStorage(prev => {
@@ -87,6 +89,37 @@ export function useCoursesLocalStorage() {
       };
     });
 
+    // Insert into Supabase
+    try {
+      const { data, error } = await supabase
+        .from('course_info')
+        .insert([
+          {
+            course_name: newCourse.name,
+            id: newCourse.id,
+            topic_name: null,
+            topic_date: null,
+            topic_mastery: null,
+            assignment_name: null,
+            assignment_due_date: null,
+            ass_status: null,
+            ass_sub_link: null,
+            exam_name: null,
+            exam_date: null,
+            exam_prep: null,
+            syllabus_link: null,
+          },
+        ]);
+
+      if (error) {
+        console.error('Error inserting course into Supabase:', error.message);
+      } else {
+        console.log('Course successfully added to Supabase:', data);
+      }
+    } catch (err) {
+      console.error('Unexpected error during Supabase insert:', err);
+    }
+
     return newCourse;
   }, []);
 
@@ -95,7 +128,7 @@ export function useCoursesLocalStorage() {
     return storage.courses.find(course => course.id === courseId);
   }, [storage.courses]);
 
-  const updateCourse = useCallback((courseId: string, updates: Partial<CourseMetadata>) => {
+  const updateCourse = useCallback(async (courseId: string, updates: Partial<CourseMetadata>) => {
     setStorage(prev => ({
       ...prev,
       courses: prev.courses.map(course => 
@@ -103,6 +136,22 @@ export function useCoursesLocalStorage() {
       ),
       lastUpdated: Date.now()
     }));
+
+    // Update course name in Supabase if it's part of the updates
+    if (updates.name !== undefined) {
+      try {
+        const { error } = await supabase
+          .from('course_info')
+          .update({ course_name: updates.name })
+          .eq('id', courseId);
+
+        if (error) {
+          console.error('Error updating course in Supabase:', error.message);
+        }
+      } catch (err) {
+        console.error('Unexpected error during Supabase update:', err);
+      }
+    }
   }, []);
 
   const deleteCourse = useCallback((courseId: string) => {
@@ -170,8 +219,8 @@ export function useCoursesLocalStorage() {
     entityType: keyof Omit<CourseStorageSchema, 'version' | 'lastUpdated' | 'courses'>, 
     courseId: string
   ): T[] => {
-    return storage[entityType].filter(entity => 
-      (entity as T & { courseId: string }).courseId === courseId
+    return (storage[entityType] as unknown as T[]).filter(entity => 
+      entity.courseId === courseId
     ) as T[];
   }, [storage]);
 
