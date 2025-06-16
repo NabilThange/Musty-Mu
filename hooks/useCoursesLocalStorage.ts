@@ -1,280 +1,188 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Course, Topic, Assignment, Exam } from '@/types/Course';
+import { 
+  CourseMetadata, 
+  Topic, 
+  Assignment, 
+  Exam, 
+  Review, 
+  Analytics, 
+  CourseEvent 
+} from '@/types/Course';
 
 interface CourseStorageSchema {
   version: string;
   lastUpdated: number;
-  courses: Course[];
+  courses: CourseMetadata[];
+  topics: Topic[];
+  assignments: Assignment[];
+  exams: Exam[];
+  reviews: Review[];
+  analytics: Analytics[];
+  events: CourseEvent[];
 }
 
-const STORAGE_KEY = 'musty_courses_v1';
-const CURRENT_VERSION = '1.0.0';
+const STORAGE_KEY = 'musty_courses_v2';
+const CURRENT_VERSION = '2.0.0';
 
 export function useCoursesLocalStorage() {
-  // Use useMemo to ensure consistent initial state
-  const [courses, setCourses] = useState<Course[]>(() => {
-    // Check if we're in browser environment to avoid hydration issues
+  const [storage, setStorage] = useState<CourseStorageSchema>(() => {
     if (typeof window !== 'undefined') {
       try {
         const storedData = localStorage.getItem(STORAGE_KEY);
         if (storedData) {
           const parsedData: CourseStorageSchema = JSON.parse(storedData);
-          return parsedData.courses || [];
+          
+          // Ensure all required fields exist
+          return {
+            version: parsedData.version || CURRENT_VERSION,
+            lastUpdated: parsedData.lastUpdated || Date.now(),
+            courses: parsedData.courses || [],
+            topics: parsedData.topics || [],
+            assignments: parsedData.assignments || [],
+            exams: parsedData.exams || [],
+            reviews: parsedData.reviews || [],
+            analytics: parsedData.analytics || [],
+            events: parsedData.events || []
+          };
         }
       } catch (error) {
         console.error('Failed to load courses:', error);
       }
     }
-    return [];
+    
+    // Return default empty storage if no data or error
+    return {
+      version: CURRENT_VERSION,
+      lastUpdated: Date.now(),
+      courses: [],
+      topics: [],
+      assignments: [],
+      exams: [],
+      reviews: [],
+      analytics: [],
+      events: []
+    };
   });
 
-  // Memoize migration function to prevent unnecessary re-renders
-  const migrateCourseData = useCallback((storedData: CourseStorageSchema) => {
-    if (storedData.version !== CURRENT_VERSION) {
-      const migratedCourses = storedData.courses.map(course => ({
-        ...course,
-        topics: course.topics || [],
-        assignments: course.assignments || [],
-        exams: course.exams || [],
-        status: course.status || 'Not started',
-        createdAt: course.createdAt || Date.now(),
-        lastUpdated: course.lastUpdated || Date.now(),
-        archived: course.archived || false
-      }));
-
-      return {
-        version: CURRENT_VERSION,
-        lastUpdated: Date.now(),
-        courses: migratedCourses
-      };
-    }
-    return storedData;
-  }, []);
-
-  // Persist courses to localStorage
+  // Persist entire storage to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storageData: CourseStorageSchema = {
-        version: CURRENT_VERSION,
-        lastUpdated: Date.now(),
-        courses: courses
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(storageData));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(storage));
     }
-  }, [courses]);
+  }, [storage]);
 
-  // Memoize course management methods
-  const addCourse = useCallback((newCourse: Omit<Course, 'id'>) => {
-    let addedCourse: Course | null = null;
+  // Course Management
+  const addCourse = useCallback((course: Omit<CourseMetadata, 'id'>) => {
+    const newCourse: CourseMetadata = {
+      ...course,
+      id: `course_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    };
     
-    setCourses(prevCourses => {
-      const isDuplicate = prevCourses.some(course => 
-        course.name.toLowerCase() === newCourse.name.toLowerCase()
-      );
-
-      if (isDuplicate) return prevCourses;
-
-      const courseToAdd: Course = {
-        ...newCourse,
-        id: `course_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        createdAt: Date.now(),
-        lastUpdated: Date.now(),
-        archived: false
+    setStorage(prev => {
+      const updatedCourses = [...prev.courses, newCourse];
+      return {
+        ...prev,
+        courses: updatedCourses,
+        lastUpdated: Date.now()
       };
-
-      addedCourse = courseToAdd;
-      return [...prevCourses, courseToAdd];
     });
 
-    return addedCourse;
+    return newCourse;
   }, []);
 
-  const updateCourse = useCallback((courseId: string, updates: Partial<Course>) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.id === courseId 
-          ? { 
-              ...course, 
-              ...updates, 
-              lastUpdated: Date.now() 
-            } 
-          : course
-      )
-    );
+  // Add a method to get a course by ID
+  const getCourseById = useCallback((courseId: string) => {
+    return storage.courses.find(course => course.id === courseId);
+  }, [storage.courses]);
+
+  const updateCourse = useCallback((courseId: string, updates: Partial<CourseMetadata>) => {
+    setStorage(prev => ({
+      ...prev,
+      courses: prev.courses.map(course => 
+        course.id === courseId ? { ...course, ...updates } : course
+      ),
+      lastUpdated: Date.now()
+    }));
   }, []);
 
   const deleteCourse = useCallback((courseId: string) => {
-    setCourses(prevCourses => 
-      prevCourses.filter(course => course.id !== courseId)
-    );
-  }, []);
-
-  const archiveCourse = useCallback((courseId: string) => {
-    setCourses(prevCourses => 
-      prevCourses.map(course => 
-        course.id === courseId 
-          ? { 
-              ...course, 
-              archived: true, 
-              archivedAt: Date.now(),
-              lastUpdated: Date.now()
-            } 
-          : course
-      )
-    );
-  }, []);
-
-  // Memoize utility methods
-  const getActiveCourses = useMemo(() => 
-    () => courses.filter(course => !course.archived), 
-    [courses]
-  );
-
-  const getArchivedCourses = useMemo(() => 
-    () => courses.filter(course => course.archived), 
-    [courses]
-  );
-
-  const getCourseById = useMemo(() => 
-    (courseId: string) => courses.find(course => course.id === courseId), 
-    [courses]
-  );
-
-  const searchCourses = useMemo(() => 
-    (query: string) => courses.filter(course => 
-      course.name.toLowerCase().includes(query.toLowerCase()) ||
-      course.courseCode?.toLowerCase().includes(query.toLowerCase())
-    ), 
-    [courses]
-  );
-
-  // Export and import methods
-  const exportCourses = useCallback(() => {
-    const exportData = {
-      version: CURRENT_VERSION,
-      exportedAt: Date.now(),
-      courses: courses
-    };
-    
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = `musty_courses_export_${new Date().toISOString().replace(/:/g, '-')}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-  }, [courses]);
-
-  const importCourses = useCallback((importedData: string) => {
-    try {
-      const parsedData = JSON.parse(importedData);
+    setStorage(prev => {
+      // Remove the course
+      const updatedCourses = prev.courses.filter(course => course.id !== courseId);
       
-      if (!parsedData.courses || !Array.isArray(parsedData.courses)) {
-        throw new Error('Invalid import data');
-      }
+      // Remove associated entities
+      const updatedTopics = prev.topics.filter(topic => topic.courseId !== courseId);
+      const updatedAssignments = prev.assignments.filter(assignment => assignment.courseId !== courseId);
+      const updatedExams = prev.exams.filter(exam => exam.courseId !== courseId);
+      const updatedReviews = prev.reviews.filter(review => review.courseId !== courseId);
+      const updatedAnalytics = prev.analytics.filter(analytics => analytics.courseId !== courseId);
+      const updatedEvents = prev.events.filter(event => event.courseId !== courseId);
 
-      const importedCourses = parsedData.courses.map(course => ({
-        ...course,
-        id: `course_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        createdAt: Date.now(),
-        lastUpdated: Date.now(),
-        archived: false
-      }));
-
-      setCourses(prevCourses => [...prevCourses, ...importedCourses]);
-      return true;
-    } catch (error) {
-      console.error('Course import failed:', error);
-      return false;
-    }
+      return {
+        ...prev,
+        courses: updatedCourses,
+        topics: updatedTopics,
+        assignments: updatedAssignments,
+        exams: updatedExams,
+        reviews: updatedReviews,
+        analytics: updatedAnalytics,
+        events: updatedEvents,
+        lastUpdated: Date.now()
+      };
+    });
   }, []);
 
-  const calculateCourseProgress = useCallback((course: Course) => {
-    const totalTopics = course.topics.length;
-    const completedTopics = course.topics.filter(topic => topic.completed).length;
-    
-    const totalAssignments = course.assignments.length;
-    const completedAssignments = course.assignments.filter(assignment => assignment.completed).length;
-    
-    const totalExams = course.exams.length;
-    const completedExams = course.exams.filter(exam => exam.completed).length;
-    
-    const topicProgress = totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 0;
-    const assignmentProgress = totalAssignments > 0 ? (completedAssignments / totalAssignments) * 100 : 0;
-    const examProgress = totalExams > 0 ? (completedExams / totalExams) * 100 : 0;
-    
-    const overallProgress = (topicProgress + assignmentProgress + examProgress) / 3;
-    
-    return {
-      topicProgress,
-      assignmentProgress,
-      examProgress,
-      overallProgress: Math.round(overallProgress)
-    };
+  // Entity Management Methods (Generic)
+  const addEntity = useCallback(<T extends { id: string; courseId: string }>(
+    entityType: keyof Omit<CourseStorageSchema, 'version' | 'lastUpdated' | 'courses'>, 
+    entity: Omit<T, 'id'> & { courseId: string }
+  ) => {
+    const newEntity = {
+      ...entity,
+      id: `${entityType.slice(0, -1)}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    } as T;
+
+    setStorage(prev => ({
+      ...prev,
+      [entityType]: [...prev[entityType], newEntity],
+      lastUpdated: Date.now()
+    }));
+
+    return newEntity;
   }, []);
 
-  const getUpcomingDeadlines = useCallback(() => {
-    const now = Date.now();
-    const upcomingDeadlines = courses.flatMap(course => [
-      ...course.assignments
-        .filter(assignment => !assignment.completed && new Date(assignment.deadline).getTime() > now)
-        .map(assignment => ({
-          courseId: course.id,
-          courseName: course.name,
-          type: 'assignment',
-          title: assignment.title,
-          deadline: assignment.deadline
-        })),
-      ...course.exams
-        .filter(exam => !exam.completed && new Date(exam.date).getTime() > now)
-        .map(exam => ({
-          courseId: course.id,
-          courseName: course.name,
-          type: 'exam',
-          title: exam.title,
-          deadline: exam.date
-        }))
-    ]).sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+  const updateEntity = useCallback(<T extends { id: string }>(
+    entityType: keyof Omit<CourseStorageSchema, 'version' | 'lastUpdated' | 'courses'>, 
+    entityId: string, 
+    updates: Partial<T>
+  ) => {
+    setStorage(prev => ({
+      ...prev,
+      [entityType]: prev[entityType].map(entity => 
+        entity.id === entityId ? { ...entity, ...updates } : entity
+      ),
+      lastUpdated: Date.now()
+    }));
+  }, []);
 
-    return upcomingDeadlines;
-  }, [courses]);
-
-  const getCourseAnalytics = useCallback(() => {
-    const totalCourses = courses.length;
-    const activeCourses = courses.filter(course => !course.archived).length;
-    const archivedCourses = courses.filter(course => course.archived).length;
-    
-    const progressStats = courses.map(course => calculateCourseProgress(course));
-    
-    const averageProgress = progressStats.length > 0 
-      ? Math.round(progressStats.reduce((sum, stat) => sum + stat.overallProgress, 0) / progressStats.length)
-      : 0;
-    
-    return {
-      totalCourses,
-      activeCourses,
-      archivedCourses,
-      averageProgress,
-      progressStats
-    };
-  }, [courses, calculateCourseProgress]);
+  // Filtering Methods
+  const getEntitiesByCourseId = useCallback(<T extends { courseId: string }>(
+    entityType: keyof Omit<CourseStorageSchema, 'version' | 'lastUpdated' | 'courses'>, 
+    courseId: string
+  ): T[] => {
+    return storage[entityType].filter(entity => 
+      (entity as T & { courseId: string }).courseId === courseId
+    ) as T[];
+  }, [storage]);
 
   return {
-    courses,
+    ...storage,
     addCourse,
+    getCourseById,
     updateCourse,
     deleteCourse,
-    archiveCourse,
-    exportCourses,
-    importCourses,
-    getActiveCourses,
-    getArchivedCourses,
-    searchCourses,
-    getCourseById,
-    calculateCourseProgress,
-    getUpcomingDeadlines,
-    getCourseAnalytics
+    addEntity,
+    updateEntity,
+    getEntitiesByCourseId
   };
 } 

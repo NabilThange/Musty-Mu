@@ -751,13 +751,34 @@
   box-shadow: var(--shadow-brutal-md) !important;
 }
 
-.brutalist-calendar-wrapper .fc-timegrid-slot {
-  border-top: 1px solid var(--brutalist-black) !important;
+/* FullCalendar Week View - Black Borders */
+.fc-timegrid-slot {
+  border-color: black !important;
+  border-width: 2px !important; /* Made thicker for brutalist look */
 }
 
-.brutalist-calendar-wrapper .fc-timegrid-axis {
-  border-right: 2px solid var(--brutalist-black) !important;
-  font-weight: 900 !important;
+.fc-timegrid-axis {
+  border-color: black !important;
+  border-width: 1px !important;
+}
+
+.fc-timegrid-col {
+  border-color: black !important;
+  border-width: 1px !important;
+}
+
+.fc-timegrid-body td {
+  border-color: black !important;
+}
+
+.fc-scrollgrid-sync-table {
+  border-color: black !important;
+}
+
+/* Style the time labels to match your brutalist theme */
+.fc-timegrid-slot-label {
+  font-weight: bold !important;
+  text-transform: uppercase !important;
 }
 
 /* Further Calendar Refinements */
@@ -1771,3 +1792,71 @@
   color: white !important;
 }
 
+/* FullCalendar Week View - Black Borders */
+.fc-timegrid-slot {
+  border-color: black !important;
+  border-width: 2px !important; /* Made thicker for brutalist look */
+}
+
+.fc-timegrid-axis {
+  border-color: black !important;
+  border-width: 1px !important;
+}
+
+.fc-timegrid-col {
+  border-color: black !important;
+  border-width: 1px !important;
+}
+
+.fc-timegrid-body td {
+  border-color: black !important;
+}
+
+.fc-scrollgrid-sync-table {
+  border-color: black !important;
+}
+
+/* Style the time labels to match your brutalist theme */
+.fc-timegrid-slot-label {
+  font-weight: bold !important;
+  text-transform: uppercase !important;
+}
+
+/* Add this to your global CSS file (like globals.css or styles.css) */
+
+/* Add this to your global CSS file (like globals.css or styles.css) */
+
+/* FullCalendar Week View - Black Borders */
+.fc-timegrid-slot {
+  border-color: black !important;
+  border-width: 1px !important;
+}
+
+.fc-timegrid-axis {
+  border-color: black !important;
+  border-width: 1px !important;
+}
+
+.fc-timegrid-col {
+  border-color: black !important;
+  border-width: 1px !important;
+}
+
+.fc-timegrid-body td {
+  border-color: black !important;
+}
+
+.fc-scrollgrid-sync-table {
+  border-color: black !important;
+}
+
+/* Optional: Make borders thicker for more brutalist look */
+.fc-timegrid-slot {
+  border-width: 2px !important;
+}
+
+/* Optional: Style the time labels to match your brutalist theme */
+.fc-timegrid-slot-label {
+  font-weight: bold !important;
+  text-transform: uppercase !important;
+}

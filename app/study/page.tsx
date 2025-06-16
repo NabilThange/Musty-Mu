@@ -6,6 +6,9 @@ import Navbar from '@/components/navbar'
 import { useAcademicContext } from '@/contexts/academic-context'
 import { AcademicSelector, AcademicSelectorModal } from '@/components/academic-selector'
 import CourseCard from '@/components/course-card'
+import { useCoursesLocalStorage } from '@/hooks/useCoursesLocalStorage'
+import { CourseMetadata } from '@/types/Course'
+import CourseEditModal from '@/components/course-edit-modal'
 
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -46,7 +49,7 @@ const cardBackgrounds = [
   "bg-subtle-ivory-shadow",
   "bg-subtle-rust-whisper",
   "bg-subtle-cool-slate",
-];
+] as const;
 
 interface Course {
   id: string;
@@ -138,8 +141,8 @@ const EventAddModal = ({ isOpen, onClose, onAdd, selectedDate }: {
                     key={type}
                     type="button"
                     onClick={() => setEventType(type)}
-                    className={`btn-brutalist text-sm ${eventType === type ? `bg-[${eventTypeColors[type]}] text-black` : 'bg-white text-black'}`}
-                    style={{ backgroundColor: eventType === type ? eventTypeColors[type] : undefined, boxShadow: eventType === type ? 'var(--shadow-brutal-sm)' : 'var(--shadow-brutal-md)' }}
+                    className={`btn-brutalist text-sm ${eventType === type ? `bg-[${eventTypeColors[type]}]` : 'bg-white'}`}
+                    style={{ backgroundColor: eventType === type ? eventTypeColors[type] : undefined, boxShadow: eventType === type ? 'var(--shadow-brutal-sm)' : 'var(--shadow-brutal-md)', color: 'var(--force-black)' }}
                   >
                     {type}
                   </button>
@@ -172,17 +175,19 @@ const EventAddModal = ({ isOpen, onClose, onAdd, selectedDate }: {
 
 export default function StudyPage() {
   const { academicInfo, isContextSet, clearContext } = useAcademicContext()
+  const { addCourse, courses, deleteCourse } = useCoursesLocalStorage()
   const [showSelector, setShowSelector] = useState(false)
   const [pageTitle, setPageTitle] = useState<string>('Study Schedule')
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false)
   const [currentQuote, setCurrentQuote] = useState<string>('')
-  const [courses, setCourses] = useState<Course[]>([])
-  const [calendarEvents, setCalendarEvents] = useState<any[]>([])
-  const [activeCalendarTab, setActiveCalendarTab] = useState<string>('Week')
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
+  const [activeCalendarTab, setActiveCalendarTab] = useState<'Week' | 'Month' | 'Review' | 'Assignments' | 'Exams' | 'Analytics'>('Week')
   const [showEventModal, setShowEventModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState('')
   const calendarRef = useRef<FullCalendar>(null);
   const [showChangeCoverButton, setShowChangeCoverButton] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<CourseMetadata | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   useEffect(() => {
     if (!isContextSet) {
@@ -199,40 +204,24 @@ export default function StudyPage() {
     const randomIndex = Math.floor(Math.random() * motivationalQuotes.length);
     setCurrentQuote(motivationalQuotes[randomIndex]);
 
-    const initialCourses: Course[] = [
-      { id: '1', name: 'YOUR COURSE', subtext: 'www.yourcourse', thumbnailText: 'Thumbnail Placeholder', cardBgColor: '' },
-      { id: '2', name: 'writing', subtext: 'something about this course', thumbnailText: 'Thumbnail Placeholder', cardBgColor: '' },
-    ];
-
-    const coursesWithRandomColors = initialCourses.map(course => ({
-      ...course,
-      cardBgColor: cardBackgrounds[Math.floor(Math.random() * cardBackgrounds.length)],
-    }));
-    setCourses(coursesWithRandomColors);
-
     // Initialize calendar events
-    const initialEvents: any[] = [
+    const initialEvents: CalendarEvent[] = [
       { 
         id: '1',
         title: 'IIT : ORIENTATION', 
         date: '2026-06-09',
-        extendedProps: { 
-          type: 'general',
-          color: '#96CEB4'
-        }
+        type: 'general',
+        color: '#96CEB4'
       },
       { 
         id: '2',
         title: 'Assignment Due', 
         date: '2026-06-15',
-        extendedProps: { 
-          type: 'assignment',
-          color: '#FF6B6B'
-        }
+        type: 'assignment',
+        color: '#FF6B6B'
       }
     ];
     setCalendarEvents(initialEvents);
-
   }, [])
 
   useEffect(() => {
@@ -254,14 +243,20 @@ export default function StudyPage() {
   }
 
   const handleNewCourse = () => {
-    const newCourse: Course = {
-      id: Date.now().toString(),
+    const newCourse: Omit<CourseMetadata, 'id'> = {
       name: 'NEW COURSE',
-      subtext: 'Placeholder for new course details',
-      thumbnailText: 'New Course Thumbnail',
-      cardBgColor: cardBackgrounds[Math.floor(Math.random() * cardBackgrounds.length)],
+      icon: '📚',
+      coverImage: '',
+      professor: '',
+      email: '',
+      website: '',
+      courseCode: 'COURSE-XXX',
+      status: 'Not Started',
+      semester: academicInfo.semester,
+      year: academicInfo.year
     };
-    setCourses(prevCourses => [...prevCourses, newCourse]);
+    
+    addCourse(newCourse);
   };
 
   const handleDateClick = (info: any) => {
@@ -272,7 +267,7 @@ export default function StudyPage() {
   const handleAddEvent = (newEvent: CalendarEvent) => {
     // Transform newEvent to FullCalendar's expected structure
     const fcEvent = {
-      id: newEvent.id,
+      id: newEvent.id || Date.now().toString(),
       title: newEvent.title,
       date: newEvent.date,
       extendedProps: {
@@ -283,7 +278,7 @@ export default function StudyPage() {
     setCalendarEvents(prev => [...prev, fcEvent]);
   };
 
-  const handleCalendarViewChange = (view: string) => {
+  const handleCalendarViewChange = (view: 'Week' | 'Month' | 'Review' | 'Assignments' | 'Exams' | 'Analytics') => {
     setActiveCalendarTab(view);
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
@@ -300,6 +295,11 @@ export default function StudyPage() {
     console.log("Change cover clicked!");
     // In a real application, this would open a file picker or a modal
   };
+
+  const handleDeleteCourse = (courseId: string) => {
+    deleteCourse(courseId);
+    // Optional: Add navigation or state update if needed
+  }
 
   const renderTitle = () => {
     const parts = pageTitle.split(' ')
@@ -394,16 +394,32 @@ export default function StudyPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {courses.map(course => (
-              <CourseCard
-                key={course.id}
-                id={course.id}
-                name={course.name}
-                subtext={course.subtext}
-                thumbnailText={course.thumbnailText}
-                cardBgColor={course.cardBgColor}
-              />
+              <div 
+                key={course.id} 
+                className="relative group"
+              >
+                <CourseCard
+                  id={course.id}
+                  name={course.name}
+                  subtext={course.courseCode || 'No Code'}
+                  thumbnailText={course.name}
+                  cardBgColor={cardBackgrounds[Math.floor(Math.random() * cardBackgrounds.length)]}
+                />
+                <button 
+                  onClick={() => {
+                    setSelectedCourse(course)
+                    setIsEditModalOpen(true)
+                  }}
+                  className="absolute top-4 right-4 bg-white text-black border-4 border-black font-black uppercase text-sm px-4 py-2 shadow-brutal transition-all hover:translate-y-1 hover:shadow-none opacity-0 group-hover:opacity-100"
+                >
+                  Edit
+                </button>
+              </div>
             ))}
-            <div className="bg-white border-8 border-black p-8 shadow-brutal hover:-translate-y-4 hover:shadow-none transition-all text-left flex flex-col items-center justify-center cursor-pointer" onClick={handleNewCourse}>
+            <div 
+              className="bg-white border-8 border-black p-8 shadow-brutal hover:-translate-y-4 hover:shadow-none transition-all text-left flex flex-col items-center justify-center cursor-pointer" 
+              onClick={handleNewCourse}
+            >
               <span className="text-6xl mb-4 text-black">+</span>
               <h3 className="font-black text-xl uppercase text-black">New Page</h3>
             </div>
@@ -431,7 +447,7 @@ export default function StudyPage() {
               ].map(({ key, color, icon }) => (
                 <button
                   key={key}
-                  onClick={() => handleCalendarViewChange(key)}
+                  onClick={() => handleCalendarViewChange(key as 'Week' | 'Month' | 'Review' | 'Assignments' | 'Exams' | 'Analytics')}
                   className={`
                     flex items-center gap-2 px-4 py-3 border-4 border-black font-black uppercase text-sm
                     transition-all shadow-brutal hover:translate-y-1 hover:shadow-none
@@ -558,6 +574,15 @@ export default function StudyPage() {
         onAdd={handleAddEvent}
         selectedDate={selectedDate}
       />
+
+      {/* Course Edit Modal */}
+      {selectedCourse && (
+        <CourseEditModal
+          isOpen={isEditModalOpen}
+          course={selectedCourse}
+          onClose={() => setIsEditModalOpen(false)}
+        />
+      )}
 
       <AcademicSelectorModal isOpen={showSelector} onClose={() => setShowSelector(false)} />
     </div>

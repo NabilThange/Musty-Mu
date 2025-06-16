@@ -1,34 +1,72 @@
+export interface CourseMetadata {
+  id: string;
+  name: string;
+  icon?: string;
+  coverImage?: string;
+  
+  // Institutional Details
+  professor?: string;
+  email?: string;
+  website?: string;
+  courseCode?: string;
+  
+  // Course Status
+  status: 'Not Started' | 'In Progress' | 'Completed';
+  semester?: string;
+  year?: string;
+}
+
 export interface Topic {
-  id?: string;
+  id: string;
+  courseId: string;
   name: string;
   date: string;
-  details: string;
-  status: string;
-  priority?: 'low' | 'medium' | 'high';
-  completed?: boolean;
-  completedAt?: number;
+  mastery: 'Not Started' | 'Learning' | 'Mastered';
+  details?: string;
 }
 
 export interface Assignment {
-  id?: string;
+  id: string;
+  courseId: string;
   name: string;
-  date: string;
-  details: string;
-  status: string;
-  weight?: number; // Percentage of course grade
-  completed?: boolean;
-  completedAt?: number;
+  dueDate: string;
+  status: 'Pending' | 'Completed' | 'Overdue';
+  submissionLink?: string;
 }
 
 export interface Exam {
-  id?: string;
+  id: string;
+  courseId: string;
   name: string;
   date: string;
-  details: string;
-  status: string;
-  type?: 'midterm' | 'final' | 'quiz';
-  completed?: boolean;
-  completedAt?: number;
+  syllabus?: string;
+  prepStatus: 'Not Started' | 'Studying' | 'Ready';
+}
+
+export interface Review {
+  id: string;
+  courseId: string;
+  topicName: string;
+  lastReviewed: string;
+  reviewNotes?: string;
+}
+
+export interface Analytics {
+  id: string;
+  courseId: string;
+  subject: string;
+  topicsMastered: number;
+  totalTopics: number;
+  score?: number;
+}
+
+export interface CourseEvent {
+  id: string;
+  courseId: string;
+  title: string;
+  date: string;
+  type: 'lecture' | 'assignment' | 'exam' | 'review';
+  description?: string;
 }
 
 export interface Course {

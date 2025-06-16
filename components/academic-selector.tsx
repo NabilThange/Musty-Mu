@@ -47,7 +47,7 @@ export function AcademicSelector({ onComplete, showAsModal = false }: AcademicSe
   }
 
   const containerClass = showAsModal
-    ? "bg-white border-8 border-black p-8 shadow-brutal max-w-3xl mx-auto"
+    ? "bg-white border-8 border-black p-8 shadow-brutal max-w-3xl mx-auto flex flex-col justify-center min-h-[70vh]"
     : "bg-white border-8 border-black p-8 shadow-brutal"
 
   return (
@@ -185,8 +185,10 @@ export function AcademicSelectorModal({ isOpen, onClose }: { isOpen: boolean; on
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="max-w-5xl w-full max-h-[calc(100vh-2rem)] overflow-y-auto">
-        <AcademicSelector onComplete={onClose} showAsModal />
+      <div className="w-full max-w-5xl min-h-[80vh] flex items-center justify-center">
+        <div className="max-w-3xl w-full">
+          <AcademicSelector onComplete={onClose} showAsModal />
+        </div>
       </div>
     </div>
   )
